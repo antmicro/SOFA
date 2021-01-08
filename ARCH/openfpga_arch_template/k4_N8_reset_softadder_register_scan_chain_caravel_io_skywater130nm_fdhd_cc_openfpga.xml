@@ -225,11 +225,13 @@
       <output_buffer exist="true" circuit_model_name="sky130_fd_sc_hd__inv_1"/>
       <port type="input" prefix="SOC_IN" lib_name="SOC_IN" size="1" is_global="true" is_io="true" is_data_io="true"/>
       <port type="output" prefix="SOC_OUT" lib_name="SOC_OUT" size="1" is_global="true" is_io="true" is_data_io="true"/>
-      <port type="output" prefix="SOC_DIR" lib_name="SOC_DIR" size="1" is_global="true" is_io="true"/>
-      <port type="input" prefix="IO_ISOL_N" lib_name="IO_ISOL_N" size="1" is_global="true" default_val="1"/>
+      <!--port type="output" prefix="SOC_DIR" lib_name="SOC_DIR" size="1" is_global="true" is_io="true"/>
+      <port type="input" prefix="IO_ISOL_N" lib_name="IO_ISOL_N" size="1" is_global="true" default_val="1"/-->
       <port type="output" prefix="inpad" lib_name="FPGA_IN" size="1"/>
       <port type="input" prefix="outpad" lib_name="FPGA_OUT" size="1"/>
-      <port type="sram" prefix="en" lib_name="FPGA_DIR" size="1" mode_select="true" circuit_model_name="sky130_fd_sc_hd__dfrtp_1" default_val="1"/>
+      <port type="output" prefix="SOC_IO_DIR" lib_name="SOC_IO_DIR" size="1" is_global="true" is_io="true"/>
+      <port type="sram" prefix="io_dir" lib_name="FPGA_IO_DIR" size="1" mode_select="true" circuit_model_name="ql_sky130_fd_sc_hd__ccff_1_wrap" default_val="1"/>
+      <!--port type="sram" prefix="en" lib_name="FPGA_DIR" size="1" mode_select="true" circuit_model_name="sky130_fd_sc_hd__dfrtp_1" default_val="1"/-->
     </circuit_model>
     <circuit_model type="hard_logic" name="sky130_fd_sc_hd__mux2_1_wrapper" prefix="sky130_fd_sc_hd__mux2_1_wrapper" verilog_netlist="${SKYWATER_OPENFPGA_HOME}/HDL/common/sky130_fd_sc_hd_wrapper.v">
       <design_technology type="cmos"/>
@@ -266,6 +268,10 @@
   <tile_annotations>
     <global_port name="clk" tile_port="clb.clk" is_clock="true" default_val="0"/>
     <global_port name="Reset" tile_port="clb.reset" is_reset="true" default_val="1"/>
+    <global_port name="Reset_io_top" tile_port="io_top.reset" is_reset="true" default_val="1"/>
+    <global_port name="Reset_io_right" tile_port="io_right.reset" is_reset="true" default_val="1"/>
+    <global_port name="Reset_io_bottom" tile_port="io_bottom.reset" is_reset="true" default_val="1"/>
+    <global_port name="Reset_io_left" tile_port="io_left.reset" is_reset="true" default_val="1"/>
   </tile_annotations>
   <pb_type_annotations>
     <!-- physical pb_type binding in complex block IO -->
@@ -285,12 +291,23 @@
     <!-- End physical pb_type binding in complex block IO -->
 
     <!-- physical pb_type binding in complex block CLB -->
+    <pb_type name="clb.fle[physical].fabric">
+      <!-- Binding interconnect to circuit models as their physical implementation, if not defined, we use the default model -->
+      <interconnect name="mux3" circuit_model_name="mux_1level_tapbuf"/>
+      <interconnect name="mux4" circuit_model_name="mux_1level_tapbuf"/>
+    </pb_type>    
     <!-- physical mode will be the default mode if not specified -->
     <pb_type name="clb.fle" physical_mode_name="physical"/>
     <pb_type name="clb.fle[physical].fabric.frac_logic.frac_lut4" circuit_model_name="frac_lut4" mode_bits="0"/>
     <pb_type name="clb.fle[physical].fabric.frac_logic.carry_follower" circuit_model_name="sky130_fd_sc_hd__mux2_1_wrapper"/>
     <pb_type name="clb.fle[physical].fabric.ff" circuit_model_name="sky130_fd_sc_hd__sdfrtp_1"/>
     <!-- Binding operating pb_type to physical pb_type -->
+    <pb_type name="clb.fle[n2_lut3].lut3inter.ble3.lut3" physical_pb_type_name="clb.fle[physical].fabric.frac_logic.frac_lut4" mode_bits="1" physical_pb_type_index_factor="0.5">
+      <!-- Binding the lut3 to the first 3 inputs of fracturable lut4 -->
+      <port name="in" physical_mode_port="in[0:2]"/>
+      <port name="out" physical_mode_port="lut3_out[0:0]" physical_mode_pin_rotate_offset="1"/>
+    </pb_type>
+    <pb_type name="clb.fle[n2_lut3].lut3inter.ble3.ff" physical_pb_type_name="clb.fle[physical].fabric.ff"/>
     <!-- Binding operating pb_types in mode 'ble4' -->
     <pb_type name="clb.fle[n1_lut4].ble4.lut4" physical_pb_type_name="clb.fle[physical].fabric.frac_logic.frac_lut4" mode_bits="0">
       <!-- Binding the lut4 to the first 4 inputs of fracturable lut4 -->

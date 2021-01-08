@@ -496,7 +496,7 @@
               <pb_type name="frac_lut4" blif_model=".subckt frac_lut4" num_pb="1">
                 <input name="in" num_pins="4"/>
                 <output name="lut2_out" num_pins="2"/>
-                <output name="lut3_out" num_pins="2"/>
+                <output name="lut3_out" num_pins="1"/>
                 <output name="lut4_out" num_pins="1"/>
               </pb_type>
               <pb_type name="carry_follower" blif_model=".subckt carry_follower" num_pb="1">
@@ -512,9 +512,9 @@
                 <direct name="direct4" input="frac_lut4.lut2_out[1:1]" output="carry_follower.a"/>
                 <direct name="direct5" input="frac_lut4.lut2_out[0:0]" output="carry_follower.cin"/>
                 <direct name="direct6" input="carry_follower.cout" output="frac_logic.cout"/>
-                <direct name="direct7" input="frac_lut4.lut3_out[1:1]" output="frac_logic.out[1:1]"/>
+                <!--direct name="direct7" input="frac_lut4.lut3_out[1:1]" output="frac_logic.out[1:1]"/-->
                 <!-- Xifan Tang: I use out[0] because the output of lut6 in lut6 mode is wired to the out[0] -->
-                <mux name="mux1" input="frac_lut4.lut4_out frac_lut4.lut3_out[0:0]" output="frac_logic.out[0:0]"/>
+                <mux name="mux1" input="frac_lut4.lut4_out frac_lut4.lut3_out" output="frac_logic.out[0:0]"/>
                 <mux name="mux2" input="frac_logic.cin frac_logic.in[2:2]" output="frac_lut4.in[2:2]"/>
               </interconnect>
             </pb_type>
@@ -573,12 +573,13 @@
         </mode>
         <!-- Physical mode definition end (physical implementation of the fle) -->
         <!-- Dual 3-LUT mode definition begin -->
-        <mode name="n2_lut3">
+        <!-- Require only one-output for 1-bit soft adder implementation -->
+        <mode name="n1_lut3"> 
           <pb_type name="lut3inter" num_pb="1">
             <input name="in" num_pins="3"/>
-            <output name="out" num_pins="2"/>
+            <output name="out" num_pins="1"/>
             <clock name="clk" num_pins="1"/>
-            <pb_type name="ble3" num_pb="2">
+            <pb_type name="ble3" num_pb="1">
               <input name="in" num_pins="3"/>
               <output name="out" num_pins="1"/>
               <clock name="clk" num_pins="1"/>
@@ -624,15 +625,14 @@
               </interconnect>
             </pb_type>
             <interconnect>
-              <direct name="direct1" input="lut3inter.in" output="ble3[0:0].in"/>
-              <direct name="direct2" input="lut3inter.in" output="ble3[1:1].in"/>
-              <direct name="direct3" input="ble3[1:0].out" output="lut3inter.out"/>
-              <complete name="complete1" input="lut3inter.clk" output="ble3[1:0].clk"/>
+              <direct name="direct1" input="lut3inter.in" output="ble3.in"/>
+              <direct name="direct2" input="ble3.out" output="lut3inter.out"/>
+              <complete name="complete1" input="lut3inter.clk" output="ble3.clk"/>
             </interconnect>
           </pb_type>
           <interconnect>
             <direct name="direct1" input="fle.in[2:0]" output="lut3inter.in"/>
-            <direct name="direct2" input="lut3inter.out" output="fle.out"/>
+            <direct name="direct2" input="lut3inter.out" output="fle.out[0:0]"/>
             <direct name="direct3" input="fle.clk" output="lut3inter.clk"/>
           </interconnect>
         </mode>
@@ -726,29 +726,36 @@
         </mode>
         <!-- Define shift register end --> 
         <!-- 1-bit soft adder definition begin-->
-        <?ignore
         <mode name="soft_adder">
           <pb_type name="soft_adder" num_pb="1">
-            <input name="in" num_pins="4"/>
+            <input name="in" num_pins="3"/>
             <input name="cin" num_pins="1"/>
             <output name="out" num_pins="1"/>
             <output name="cout" num_pins="1"/>
             <clock name="clk" num_pins="1"/>
             <pb_type name="frac_logic" num_pb="1">
-              <input name="in" num_pins="4"/>
+              <input name="in" num_pins="3"/>
               <input name="cin" num_pins="1"/>
               <output name="out" num_pins="1"/>
               <output name="cout" num_pins="1"/>
               <!-- Define LUT -->
-              <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
-                <input name="in" num_pins="4" port_class="lut_in"/>
+              <pb_type name="lut3" blif_model=".names" num_pb="1" class="lut">
+                <input name="in" num_pins="3" port_class="lut_in"/>
                 <output name="out" num_pins="1" port_class="lut_out"/>
                 <!-- LUT timing using delay matrix -->
-                <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
-                                    261e-12
-                                    261e-12
-                                    261e-12
-                                    261e-12
+                <delay_matrix type="max" in_port="lut3.in" out_port="lut3.out">
+                  235e-12
+                  235e-12
+                  235e-12
+                </delay_matrix>
+              </pb_type>
+              <pb_type name="lut2" blif_model=".names" num_pb="2" class="lut">
+                <input name="in" num_pins="2" port_class="lut_in"/>
+                <output name="out" num_pins="1" port_class="lut_out"/>
+                <!-- LUT timing using delay matrix -->
+                <delay_matrix type="max" in_port="lut2.in" out_port="lut2.out">
+                  235e-12
+                  235e-12
                 </delay_matrix>
               </pb_type>
               <!-- Define carry_follower for 1-bit adder-->
@@ -759,14 +766,15 @@
                 <output name="cout" num_pins="1"/>
               </pb_type>
               <interconnect>
-                <direct name="direct1" input="frac_logic.in[0:1]" output="lut4.in[0:1]"/>
-                <direct name="direct2" input="frac_logic.in[3:3]" output="lut4.in[3:3]"/>
-                <direct name="direct3" input="frac_logic.cin" output="carry_follower.b"/>
-                <direct name="direct4" input="lut4.lut2_out[1:1]" output="carry_follower.a"/>
-                <direct name="direct5" input="lut4.lut2_out[0:0]" output="carry_follower.cin"/>
-                <direct name="direct6" input="carry_follower.cout" output="frac_logic.cout"/>
-                <direct name="direct7" input="lut4.lut4_out" output="frac_logic.out"/>
-                <mux name="mux2" input="frac_logic.cin frac_logic.in[2:2]" output="lut4.in[2:2]"/>
+                <direct name="direct1" input="frac_logic.in[0:1]" output="lut3.in[0:1]"/>
+                <direct name="direct2" input="frac_logic.in[0:1]" output="lut2[0:0].in[0:1]"/>
+                <direct name="direct3" input="frac_logic.in[0:1]" output="lut2[1:1].in[0:1]"/>
+                <direct name="direct4" input="frac_logic.cin" output="carry_follower.b"/>
+                <direct name="direct5" input="lut2[1:1].out" output="carry_follower.a"/>
+                <direct name="direct6" input="lut2[0:0].out" output="carry_follower.cin"/>
+                <direct name="direct7" input="carry_follower.cout" output="frac_logic.cout"/>
+                <direct name="direct8" input="lut3.out" output="frac_logic.out"/>
+                <mux name="mux2" input="frac_logic.cin frac_logic.in[2:2]" output="lut3.in[2:2]"/>
               </interconnect>
             </pb_type>
             <!-- Define flip-flop -->
@@ -790,14 +798,13 @@
             </interconnect>
           </pb_type>
           <interconnect>
-            <direct name="direct1" input="fle.in" output="soft_adder.in"/>
+            <direct name="direct1" input="fle.in[0:2]" output="soft_adder.in"/>
             <direct name="direct2" input="fle.cin" output="soft_adder.cin"/>
-            <direct name="direct3" input="soft_adder.out" output="fle.out"/>
+            <direct name="direct3" input="soft_adder.out" output="fle.out[0:0]"/>
             <direct name="direct4" input="soft_adder.cout" output="fle.cout"/>
             <direct name="direct5" input="fle.clk" output="soft_adder.clk"/>
           </interconnect>
         </mode>
-        ?>
         <!-- 1-bit soft adder definition end-->
       </pb_type>
       <interconnect>

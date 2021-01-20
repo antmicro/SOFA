@@ -654,12 +654,14 @@ Authors: Xifan Tang
               <output name="cout" num_pins="1"/>
             </pb_type>
             <interconnect>
-              <direct name="direct1" input="soft_adder.in" output="frac_lut4.in"/>
-              <direct name="direct2" input="soft_adder.cin" output="carry_follower.b"/>
-              <direct name="direct3" input="frac_lut4.lut2_out[1:1]" output="carry_follower.a"/>
-              <direct name="direct4" input="frac_lut4.lut2_out[0:0]" output="carry_follower.cin"/>
-              <direct name="direct5" input="carry_follower.cout" output="soft_adder.cout"/>
-              <direct name="direct6" input="frac_lut4.lut4_out" output="soft_adder.sumout"/>
+              <direct name="direct1" input="soft_adder.in[0:1]" output="frac_lut4.in[0:1]"/>
+              <direct name="direct2" input="soft_adder.cin" output="frac_lut4.in[2]"/>
+              <direct name="direct3" input="soft_adder.in[3]" output="frac_lut4.in[3]"/>
+              <direct name="direct4" input="soft_adder.cin" output="carry_follower.b"/>
+              <direct name="direct5" input="frac_lut4.lut2_out[1:1]" output="carry_follower.a"/>
+              <direct name="direct6" input="frac_lut4.lut2_out[0:0]" output="carry_follower.cin"/>
+              <direct name="direct7" input="carry_follower.cout" output="soft_adder.cout"/>
+              <direct name="direct8" input="frac_lut4.lut4_out" output="soft_adder.sumout"/>
             </interconnect>
           </pb_type>
           <interconnect>
